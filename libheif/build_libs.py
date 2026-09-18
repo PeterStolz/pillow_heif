@@ -19,9 +19,14 @@ INSTALL_DIR_LIBS = environ.get("INSTALL_DIR_LIBS", _DEFAULT_PREFIX)
 # Extra arguments for the libheif `cmake` configure step, they override the default ones.
 LIBHEIF_CMAKE_ARGS = environ.get("PH_LIBHEIF_CMAKE_ARGS", "")
 
+# pi-heif only exposes decoding. Keep this switch narrow so the branch can be
+# rebased onto future pillow-heif releases without maintaining a separate copy
+# of the native build system.
+PI_HEIF_DECODER_ONLY = environ.get("PI_HEIF_DECODER_ONLY", environ.get("PH_LIGHT_ACTION", "0")) != "0"
+
 LIBX265_URL = "https://bitbucket.org/multicoreware/x265_git/downloads/x265_4.2.tar.gz"
 LIBDE265_URL = "https://github.com/strukturag/libde265/releases/download/v1.1.2/libde265-1.1.2.tar.gz"
-LIBHEIF_URL = "https://github.com/strukturag/libheif/releases/download/v1.23.3/libheif-1.23.3.tar.gz"
+LIBHEIF_URL = "https://github.com/strukturag/libheif/releases/download/v1.23.4/libheif-1.23.4.tar.gz"
 
 
 def download_file(url: str, out_path: str) -> bool:
@@ -261,7 +266,7 @@ def build_lib(url: str, name: str):
                     "-DWITH_GDK_PIXBUF=OFF "
                     "-DBUILD_TESTING=OFF".split()
                 )
-                cmake_args += ["-DWITH_X265=ON"]
+                cmake_args += ["-DWITH_X265=OFF" if PI_HEIF_DECODER_ONLY else "-DWITH_X265=ON"]
                 # heifio and the libheif JPEG codec discover JPEG/PNG via `find_package`; disabling
                 # keeps the configured build tree independent of the host packages (the CI deps
                 # cache), unless the user requests them via PH_LIBHEIF_CMAKE_ARGS.
@@ -305,11 +310,11 @@ def build_libs() -> None:
                 f"Set INSTALL_DIR_LIBS to a writable path (e.g. $HOME/.local or /usr/local on macOS)."
             ) from e
 
-        if not is_library_installed("x265"):
+        if not PI_HEIF_DECODER_ONLY and not is_library_installed("x265"):
             if not check_install_nasm("2.15.05"):
                 raise ValueError("Can not find/install `nasm` with version >=2.15.05")
             build_lib(LIBX265_URL, "x265")
-        else:
+        elif not PI_HEIF_DECODER_ONLY:
             print("x265 already installed.")
         if not is_library_installed("libde265") and not is_library_installed("de265"):
             build_lib(LIBDE265_URL, "libde265")
