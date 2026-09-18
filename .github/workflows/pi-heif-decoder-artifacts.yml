@@ -23,7 +23,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  build:
+  build-linux:
     name: CPython 3.13 manylinux ${{ matrix.arch }}
     strategy:
       fail-fast: false
@@ -69,10 +69,112 @@ jobs:
           path: wheelhouse/*.whl
           if-no-files-found: error
 
+  build-macos:
+    name: CPython 3.13 macOS arm64
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+
+      - name: Remove Homebrew codec libraries
+        run: brew uninstall --force --ignore-dependencies libheif x265 aom libde265 || true
+
+      - name: Prepare decoder-only distribution
+        run: |
+          cp -a pi-heif/. .
+          python3 .github/transform_to-pi_heif.py
+          sed -i '' 's/__version__ = "1.7.0"/__version__ = "1.7.0.post2"/' pi_heif/_version.py
+
+      - name: Build decoder-only libheif
+        run: >-
+          sudo PI_HEIF_DECODER_ONLY=1
+          BUILD_DIR="${{ runner.temp }}/ph-deps"
+          MACOSX_DEPLOYMENT_TARGET=11.0
+          python3 libheif/build_libs.py
+
+      - name: Build and test wheel
+        uses: pypa/cibuildwheel@e090b81e30c4d855ea63bf4b6e59204c09a101ae # v4.2.1
+        env:
+          CIBW_ARCHS: arm64
+          CIBW_BUILD: cp313-macosx_arm64
+          CIBW_ENVIRONMENT_MACOS: PI_HEIF_DECODER_ONLY=1 PH_RELEASE_TESTS=1
+          CIBW_TEST_COMMAND: >-
+            python -c 'import pi_heif;
+            info = pi_heif.libheif_info();
+            assert pi_heif.__version__ == "1.7.0.post2";
+            assert info["libheif"] == "1.23.4";
+            assert info["encoders"] == {"mask": "mask"}'
+          MACOSX_DEPLOYMENT_TARGET: "11.0"
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: pi-heif-decoder-macos-arm64
+          path: wheelhouse/*.whl
+          if-no-files-found: error
+
+  build-windows:
+    name: CPython 3.13 Windows x64
+    runs-on: windows-2022
+    env:
+      MSYS2_PREFIX: C:/temp/msys64/mingw64
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: msys2/setup-msys2@66cd2cce69caa17b53920067426061ca1de3a884 # v2.32.0
+        with:
+          location: C:/temp
+          msystem: MINGW64
+          update: true
+          install: patch mingw-w64-x86_64-binutils
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+
+      - name: Prepare decoder-only distribution
+        shell: bash
+        run: |
+          cp -a pi-heif/. .
+          python .github/transform_to-pi_heif.py
+          sed -i 's/__version__ = "1.7.0"/__version__ = "1.7.0.post2"/' pi_heif/_version.py
+
+      - name: Build decoder-only libheif
+        shell: msys2 {0}
+        run: |
+          cd libheif/windows/mingw-w64-libheif
+          makepkg-mingw --syncdeps --noconfirm -f
+          pacman -U mingw-w64-*-libheif-*-any.pkg.tar.zst --noconfirm
+
+      - name: Build and test wheel
+        uses: pypa/cibuildwheel@e090b81e30c4d855ea63bf4b6e59204c09a101ae # v4.2.1
+        env:
+          CIBW_ARCHS: AMD64
+          CIBW_BUILD: cp313-win_amd64
+          CIBW_ENVIRONMENT_WINDOWS: PI_HEIF_DECODER_ONLY=1 PH_RELEASE_TESTS=1
+          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: >-
+            delvewheel repair -vv -w {dest_dir} {wheel}
+            --add-path ${{ env.MSYS2_PREFIX }}/bin
+          CIBW_TEST_COMMAND: >-
+            python -c 'import pi_heif;
+            info = pi_heif.libheif_info();
+            assert pi_heif.__version__ == "1.7.0.post2";
+            assert info["libheif"] == "1.23.4";
+            assert info["encoders"] == {"mask": "mask"}'
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: pi-heif-decoder-windows-x86_64
+          path: wheelhouse/*.whl
+          if-no-files-found: error
+
   publish:
     name: Publish to PyPI
     if: startsWith(github.ref, 'refs/tags/pi-heif-decoder-v')
-    needs: build
+    needs: [build-linux, build-macos, build-windows]
     runs-on: ubuntu-24.04
     environment:
       name: pypi
