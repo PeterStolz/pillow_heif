@@ -5,7 +5,7 @@ package with up-to-date native libraries.**
 
 [![Decoder wheels](https://github.com/PeterStolz/pillow_heif/actions/workflows/pi-heif-decoder-artifacts.yml/badge.svg?branch=pi-heif)](https://github.com/PeterStolz/pillow_heif/actions/workflows/pi-heif-decoder-artifacts.yml)
 ![pypi](https://img.shields.io/pypi/v/pi-heif-decoder.svg)
-![python](https://img.shields.io/badge/python-3.13-blue)
+![python](https://img.shields.io/pypi/pyversions/pi-heif-decoder.svg)
 
 ## Why this fork exists
 
@@ -38,15 +38,17 @@ upstream releases of both the Python code and the native libraries.
 |---|---|
 | Distribution name | `pi-heif-decoder` |
 | Import name | `pi_heif` (drop-in for the discontinued `pi-heif`) |
-| Python | CPython 3.13 |
-| Wheels | manylinux x86_64, manylinux aarch64, macOS arm64, Windows x64 |
+| Python | CPython 3.10 – 3.15 (incl. free-threaded 3.14t/3.15t), PyPy 3.11 |
+| Wheels | manylinux + musllinux (x86_64, aarch64), macOS (arm64, x86_64), Windows (x64, arm64) + sdist |
 | libheif | 1.23.4 |
 | libde265 | 1.1.3 |
 | Encoders | none (only the built-in `mask` pseudo-encoder is reported) |
 | Decoders | HEVC via libde265 — no AV1/AVIF decoder is bundled; use Pillow's own AVIF support |
 
-Each wheel build asserts the bundled libheif/libde265 versions and the absence of
-real encoders before it is published.
+The build matrix is upstream's (`[tool.cibuildwheel]` in `pyproject.toml`). Every
+wheel is tested before publishing: `.github/pi-heif-wheel-test.py` asserts the
+bundled libheif/libde265 versions (taken from `libheif/build_libs.py`) and the
+absence of real encoders, then runs the upstream test suite against the wheel.
 
 ## Versioning and release process
 
@@ -57,6 +59,8 @@ patch series rebased onto the latest upstream tag, and the package version is
 - upstream `v1.7.0` → `pi-heif-decoder 1.7.0.postN`
 - fork-only changes (e.g. a native-library security bump) increment `postN`
 - a new upstream release resets to `.post1` after the rebase
+- the version lives in one place, `PI_HEIF_VERSION` in
+  `.github/workflows/pi-heif-decoder-artifacts.yml`; a release tag must match it
 
 Wheels are built on GitHub-hosted runners and published with
 [PyPI Trusted Publishing](https://docs.pypi.org/trusted-publishers/) (OIDC) —
