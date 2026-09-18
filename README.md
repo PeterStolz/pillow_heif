@@ -1,3 +1,12 @@
+> **This is the `pi-heif` maintenance fork** (branch `pi-heif`, PyPI package
+> [`pi-heif-decoder`](https://pypi.org/project/pi-heif-decoder/)). It continues
+> the decode-only, encoder-free `pi-heif` package that upstream discontinued in
+> [#431](https://github.com/bigcat88/pillow_heif/pull/431), because the last
+> `pi-heif` release bundles a libheif that is vulnerable to the
+> [HEIF Heist](https://heif-heist.com/) image-decoder exploits. The fork tracks
+> upstream pillow-heif releases and ships current libheif/libde265 builds.
+> See [`pi-heif/README.md`](pi-heif/README.md). Everything below is upstream's README.
+
 # pillow-heif
 
 [![Test](https://github.com/bigcat88/pillow_heif/actions/workflows/test.yml/badge.svg)](https://github.com/bigcat88/pillow_heif/actions/workflows/test.yml)
