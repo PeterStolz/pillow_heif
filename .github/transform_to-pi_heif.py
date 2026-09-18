@@ -3,7 +3,6 @@
 import shutil
 from pathlib import Path
 
-
 if __name__ == "__main__":
     files = ["setup.py", "MANIFEST.in", "pillow_heif/_pillow_heif.c"]
     for directory in ("pillow_heif", "tests"):
