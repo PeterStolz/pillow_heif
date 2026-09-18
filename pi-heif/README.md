@@ -7,17 +7,14 @@ the latest stable pillow-heif release (currently `v1.7.0`) so fixes and features
 can continue to flow from upstream. It builds against a current, decoder-only
 libheif without GPL encoders.
 
-The Linux release artifacts deliberately keep libheif outside the Python wheel
-as a normal `libheif1` Debian package. This preserves LGPL replaceability and
-makes the native dependency visible to container SBOM and vulnerability tools.
+Linux wheels bundle only decoder-capable libheif and libde265. They do not build
+or ship x265, x264, AOM, dav1d, OpenH264, or encoder plugins.
 
 [![Decoder artifacts](https://github.com/PeterStolz/pillow_heif/actions/workflows/pi-heif-decoder-artifacts.yml/badge.svg?branch=pi-heif)](https://github.com/PeterStolz/pillow_heif/actions/workflows/pi-heif-decoder-artifacts.yml)
 
 ![PythonVersion](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue)
-![impl](https://img.shields.io/pypi/implementation/pi_heif)
-![pypi](https://img.shields.io/pypi/v/pi_heif.svg)
-[![Downloads](https://static.pepy.tech/personalized-badge/pi-heif?period=total&units=international_system&left_color=grey&right_color=orange&left_text=Downloads)](https://pepy.tech/project/pi-heif)
-[![Downloads](https://static.pepy.tech/personalized-badge/pi-heif?period=month&units=international_system&left_color=grey&right_color=orange&left_text=Downloads/Month)](https://pepy.tech/project/pi-heif)
+![impl](https://img.shields.io/pypi/implementation/pi-heif-decoder)
+![pypi](https://img.shields.io/pypi/v/pi-heif-decoder.svg)
 
 ![Mac OS](https://img.shields.io/badge/mac%20os-FCC624?style=for-the-badge&logoColor=white)
 ![Windows](https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white)
@@ -31,21 +28,20 @@ It includes only `HEIF` decoder and does not support `save` operations.
 
 All codebase are the same, refer to [pillow-heif docs](https://pillow-heif.readthedocs.io/).
 
-The Python import remains `pi_heif`. The release tarballs contain an
-externally-linked CPython 3.13 wheel plus the matching `libheif1` package for
-Debian-based Linux containers on amd64 and arm64.
+The distribution name is `pi-heif-decoder`; the Python import remains
+`pi_heif`. Releases currently provide CPython 3.13 manylinux wheels for x86_64
+and aarch64.
 
 ### License boundary
 
-The artifact contains the BSD-licensed Python extension, LGPL-licensed
-libheif, and the distribution-provided LGPL libde265 runtime. It does not build
-or ship x265, x264, AOM, dav1d, OpenH264, or encoder plugins. libheif remains a
-replaceable shared library rather than being hidden inside the wheel.
+The wheel contains the BSD-licensed Python extension plus dynamically linked,
+LGPL-licensed libheif and libde265. LGPL source and license locations are
+recorded in `LICENSES_bundled.txt` inside the distribution.
 
 ### Install
 ```console
 python3 -m pip install -U pip
-python3 -m pip install pi-heif
+python3 -m pip install pi-heif-decoder
 ```
 
 ### Example of use as a Pillow plugin

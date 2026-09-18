@@ -3,7 +3,6 @@ include CHANGELOG.md
 include RELEASING.md
 include pyproject.toml
 include .github/wheels-test.py
-include packaging/Dockerfile.decoder-artifact
 
 recursive-include pillow_heif *.c *.h
 include pillow_heif/py.typed

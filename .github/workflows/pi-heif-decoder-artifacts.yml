@@ -1,4 +1,4 @@
-name: Pi-Heif decoder artifacts
+name: Pi-Heif decoder wheels
 
 on:
   pull_request:
@@ -6,60 +6,103 @@ on:
     paths:
       - ".github/workflows/pi-heif-decoder-artifacts.yml"
       - ".github/transform_to-pi_heif.py"
-      - "packaging/**"
+      - "libheif/**"
       - "pi-heif/**"
       - "pillow_heif/**"
       - "setup.py"
   push:
     branches: [pi-heif]
-    tags: ["pi-heif-v*"]
+    tags: ["pi-heif-decoder-v*"]
   workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   build:
-    name: Linux ${{ matrix.arch }}
+    name: CPython 3.13 manylinux ${{ matrix.arch }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - arch: amd64
+          - arch: x86_64
             runner: ubuntu-24.04
-          - arch: arm64
+          - arch: aarch64
             runner: ubuntu-24.04-arm
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Build decoder artifact
+
+      - name: Prepare decoder-only distribution
         run: |
-          docker build \
-            --file packaging/Dockerfile.decoder-artifact \
-            --output type=local,dest=dist \
-            .
-          tar -C dist -czf "pi-heif-decoder-1.7.0.post1-libheif-1.23.4-${{ matrix.arch }}.tar.gz" .
+          cp -a pi-heif/. .
+          python3 .github/transform_to-pi_heif.py
+          sed -i 's/__version__ = "1.7.0"/__version__ = "1.7.0.post2"/' pi_heif/_version.py
+
+      - name: Build and test wheel
+        uses: pypa/cibuildwheel@e090b81e30c4d855ea63bf4b6e59204c09a101ae # v4.2.1
+        env:
+          CIBW_ARCHS: ${{ matrix.arch }}
+          CIBW_BUILD: cp313-manylinux*
+          CIBW_BEFORE_ALL_LINUX: >-
+            python3 -m pip install cmake==3.31.6 &&
+            PI_HEIF_DECODER_ONLY=1 python3 {package}/libheif/build_libs.py
+          CIBW_ENVIRONMENT_LINUX: >-
+            PI_HEIF_DECODER_ONLY=1
+            PH_RELEASE_TESTS=1
+          CIBW_TEST_COMMAND: >-
+            python -c 'import pi_heif;
+            info = pi_heif.libheif_info();
+            assert pi_heif.__version__ == "1.7.0.post2";
+            assert info["libheif"] == "1.23.4";
+            assert info["encoders"] == {"mask": "mask"}'
+
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: pi-heif-decoder-${{ matrix.arch }}
-          path: pi-heif-decoder-*.tar.gz
+          path: wheelhouse/*.whl
           if-no-files-found: error
 
-  release:
-    if: startsWith(github.ref, 'refs/tags/pi-heif-v')
+  publish:
+    name: Publish to PyPI
+    if: startsWith(github.ref, 'refs/tags/pi-heif-decoder-v')
     needs: build
     runs-on: ubuntu-24.04
+    environment:
+      name: pypi
+      url: https://pypi.org/p/pi-heif-decoder
     permissions:
-      contents: write
+      id-token: write
     steps:
-      - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v8.0.0
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: pi-heif-decoder-*
           merge-multiple: true
           path: dist
-      - name: Publish GitHub release
+
+      - name: Publish with PyPI Trusted Publishing
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+
+  release:
+    name: Publish GitHub release
+    if: startsWith(github.ref, 'refs/tags/pi-heif-decoder-v')
+    needs: publish
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: pi-heif-decoder-*
+          merge-multiple: true
+          path: dist
+      - name: Create release
         run: gh release create "$GITHUB_REF_NAME" dist/* --generate-notes --verify-tag
         env:
           GH_REPO: ${{ github.repository }}

@@ -1,6 +1,7 @@
 """File containing code to build libraries for LibHeif (Linux and macOS) and LibHeif itself."""
 
 import platform
+from hashlib import sha256
 from os import chdir, environ, getcwd, makedirs, mkdir, path, remove
 from platform import machine
 from re import IGNORECASE, MULTILINE, match, search
@@ -25,8 +26,11 @@ LIBHEIF_CMAKE_ARGS = environ.get("PH_LIBHEIF_CMAKE_ARGS", "")
 PI_HEIF_DECODER_ONLY = environ.get("PI_HEIF_DECODER_ONLY", environ.get("PH_LIGHT_ACTION", "0")) != "0"
 
 LIBX265_URL = "https://bitbucket.org/multicoreware/x265_git/downloads/x265_4.2.tar.gz"
+LIBX265_SHA256 = "40b1ea0453e0309f0eba934e0ddf533f8f6295966679e8894e8f1c1c8d5e1210"
 LIBDE265_URL = "https://github.com/strukturag/libde265/releases/download/v1.1.2/libde265-1.1.2.tar.gz"
+LIBDE265_SHA256 = "eaacd1943ab0c452c19f6136a36ca227e6b761b39a81eaca8454d48c147e1f67"
 LIBHEIF_URL = "https://github.com/strukturag/libheif/releases/download/v1.23.4/libheif-1.23.4.tar.gz"
+LIBHEIF_SHA256 = "d0c02b4b0e978f34a1974b6f3eea7975a537bf7a9195ffeea38e7242ff316fdd"
 
 
 def download_file(url: str, out_path: str) -> bool:
@@ -34,7 +38,7 @@ def download_file(url: str, out_path: str) -> bool:
     for _ in range(2):
         try:
             run(
-                ["wget", "-q", "--no-check-certificate", url, "-O", out_path],
+                ["wget", "-q", url, "-O", out_path],
                 timeout=90,
                 stderr=DEVNULL,
                 stdout=DEVNULL,
@@ -60,11 +64,18 @@ def download_file(url: str, out_path: str) -> bool:
     return False
 
 
-def download_extract_to(url: str, out_path: str, strip: bool = True):
+def download_extract_to(url: str, out_path: str, strip: bool = True, expected_sha256: str | None = None):
     makedirs(out_path, exist_ok=True)
     archive_path = path.join(out_path, "download.tar.gz")
     if not download_file(url, archive_path):
         raise RuntimeError(f"Failed to download {url}")
+    if expected_sha256:
+        digest = sha256()
+        with open(archive_path, "rb") as archive:
+            for block in iter(lambda: archive.read(1024 * 1024), b""):
+                digest.update(block)
+        if digest.hexdigest() != expected_sha256:
+            raise RuntimeError(f"SHA-256 mismatch for {url}")
     tar_cmd = f"tar -xf {archive_path} -C {out_path}"
     if strip:
         tar_cmd += " --strip-components 1"
@@ -174,13 +185,18 @@ def build_lib(url: str, name: str):
     else:
         script_dir = path.dirname(path.abspath(__file__))
         linux_dir = path.join(script_dir, "linux")  # noqa
+        expected_sha256 = {
+            LIBX265_URL: LIBX265_SHA256,
+            LIBDE265_URL: LIBDE265_SHA256,
+            LIBHEIF_URL: LIBHEIF_SHA256,
+        }.get(url)
         if name == "x265":
-            download_extract_to(url, lib_path)
+            download_extract_to(url, lib_path, expected_sha256=expected_sha256)
             chdir(lib_path)
         else:
             build_path = path.join(lib_path, "build")
             makedirs(build_path, exist_ok=True)
-            download_extract_to(url, lib_path)
+            download_extract_to(url, lib_path, expected_sha256=expected_sha256)
             # if name == "libde265":
             #     chdir(lib_path)
             #     for patch in ("libde265/CVE-2022-1253.patch",):

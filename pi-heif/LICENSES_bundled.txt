@@ -1,9 +1,7 @@
-The decoder artifact keeps native libraries outside the Python wheel.
-
-libheif 1.23.4 is licensed under LGPL-3.0-or-later and is shipped as a
-replaceable libheif1 Debian package. Source and license:
+This wheel bundles decoder-only libheif 1.23.4 and libde265. Both libraries
+are dynamically linked and licensed under LGPL-3.0-or-later. Source and license:
 https://github.com/strukturag/libheif/tree/v1.23.4
 
-libde265 is licensed under LGPL-3.0-or-later and is installed from the target
-Debian distribution rather than copied into the wheel. Source and license:
 https://github.com/strukturag/libde265
+
+No x265, x264, AOM, dav1d, OpenH264, or encoder plugins are built or shipped.
