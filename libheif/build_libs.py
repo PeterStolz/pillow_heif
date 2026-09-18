@@ -1,5 +1,7 @@
 """File containing code to build libraries for LibHeif (Linux and macOS) and LibHeif itself."""
 
+from __future__ import annotations
+
 import platform
 from hashlib import sha256
 from os import chdir, environ, getcwd, makedirs, mkdir, path, remove
