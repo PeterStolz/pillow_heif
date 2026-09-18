@@ -57,11 +57,11 @@ jobs:
             PI_HEIF_DECODER_ONLY=1
             PH_RELEASE_TESTS=1
           CIBW_TEST_COMMAND: >-
-            python -c 'import pi_heif;
+            python -c "import pi_heif;
             info = pi_heif.libheif_info();
-            assert pi_heif.__version__ == "1.7.0.post2";
-            assert info["libheif"] == "1.23.4";
-            assert info["encoders"] == {"mask": "mask"}'
+            assert pi_heif.__version__ == '1.7.0.post2';
+            assert info['libheif'] == '1.23.4';
+            assert info['encoders'] == {'mask': 'mask'}"
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -103,11 +103,11 @@ jobs:
           CIBW_BUILD: cp313-macosx_arm64
           CIBW_ENVIRONMENT_MACOS: PI_HEIF_DECODER_ONLY=1 PH_RELEASE_TESTS=1
           CIBW_TEST_COMMAND: >-
-            python -c 'import pi_heif;
+            python -c "import pi_heif;
             info = pi_heif.libheif_info();
-            assert pi_heif.__version__ == "1.7.0.post2";
-            assert info["libheif"] == "1.23.4";
-            assert info["encoders"] == {"mask": "mask"}'
+            assert pi_heif.__version__ == '1.7.0.post2';
+            assert info['libheif'] == '1.23.4';
+            assert info['encoders'] == {'mask': 'mask'}"
           MACOSX_DEPLOYMENT_TARGET: "11.0"
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -159,11 +159,11 @@ jobs:
             delvewheel repair -vv -w {dest_dir} {wheel}
             --add-path ${{ env.MSYS2_PREFIX }}/bin
           CIBW_TEST_COMMAND: >-
-            python -c 'import pi_heif;
+            python -c "import pi_heif;
             info = pi_heif.libheif_info();
-            assert pi_heif.__version__ == "1.7.0.post2";
-            assert info["libheif"] == "1.23.4";
-            assert info["encoders"] == {"mask": "mask"}'
+            assert pi_heif.__version__ == '1.7.0.post2';
+            assert info['libheif'] == '1.23.4';
+            assert info['encoders'] == {'mask': 'mask'}"
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
