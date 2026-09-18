@@ -29,8 +29,8 @@ PI_HEIF_DECODER_ONLY = environ.get("PI_HEIF_DECODER_ONLY", environ.get("PH_LIGHT
 
 LIBX265_URL = "https://bitbucket.org/multicoreware/x265_git/downloads/x265_4.2.tar.gz"
 LIBX265_SHA256 = "40b1ea0453e0309f0eba934e0ddf533f8f6295966679e8894e8f1c1c8d5e1210"
-LIBDE265_URL = "https://github.com/strukturag/libde265/releases/download/v1.1.2/libde265-1.1.2.tar.gz"
-LIBDE265_SHA256 = "eaacd1943ab0c452c19f6136a36ca227e6b761b39a81eaca8454d48c147e1f67"
+LIBDE265_URL = "https://github.com/strukturag/libde265/releases/download/v1.1.3/libde265-1.1.3.tar.gz"
+LIBDE265_SHA256 = "554228bd17788c99a7e63b37ab5634722190e6e2bf60c1dcb01cef328e133905"
 LIBHEIF_URL = "https://github.com/strukturag/libheif/releases/download/v1.23.4/libheif-1.23.4.tar.gz"
 LIBHEIF_SHA256 = "d0c02b4b0e978f34a1974b6f3eea7975a537bf7a9195ffeea38e7242ff316fdd"
 
